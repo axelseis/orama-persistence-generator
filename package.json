@@ -6,7 +6,8 @@
   "type": "module",
   "scripts": {
     "generate-embeddings": "node generate-embeddings.js",
-    "test": "node test-config.js"
+    "test": "node test-config.js",
+    "test-search": "node test-search.js"
   },
   "keywords": [
     "orama",
@@ -24,10 +25,14 @@
     "openai": "^4.20.1",
     "@orama/orama": "^2.0.0",
     "@orama/plugin-data-persistence": "^2.0.0",
+    "@orama/plugin-embeddings": "*",
+    "@tensorflow/tfjs-node": "^4.15.0",
     "glob": "^10.3.10",
     "gray-matter": "^4.0.3",
     "nunjucks": "^3.2.4",
-    "cheerio": "^1.0.0-rc.12"
+    "cheerio": "^1.0.0-rc.12",
+    "slugify": "^1.6.6",
+    "p-limit": "^4.0.0"
   },
   "engines": {
     "node": ">=18.0.0"

@@ -14,7 +14,7 @@ import dotenv from 'dotenv'
 import { fileURLToPath } from 'url'
 import { gzip, gunzip } from 'zlib'
 import { promisify } from 'util'
-import { runEmbeddingsPipeline, getEmbedding } from './embeddings-service.js'
+import { runEmbeddingsPipeline, getEmbedding, EMBEDDING_MODEL, OPENAI_MODEL } from './embeddings-service.js'
 import { restore } from '@orama/plugin-data-persistence'
 import { search } from '@orama/orama'
 
@@ -23,9 +23,9 @@ const __filename = fileURLToPath(import.meta.url)
 const __dirname = path.dirname(__filename)
 dotenv.config({ path: path.join(__dirname, '.env') })
 
-const DOCS_PATH = '../docs/user-guide'
+const DOCS_PATH = './test-docs'
 const OUTPUT_FILE = './public/penpotRagToolContents.zip'
-const PATTERN = '**/*.{html,njk}'
+const PATTERN = '**/*.html'
 
 const OPTIONS = {
   baseUrl: 'https://example.com/user-guide/',
@@ -117,8 +117,8 @@ async function main() {
     process.exit(1)
   }
 
-  // Verificar que existe la API key de OpenAI
-  if (!process.env.OPENAI_API_KEY) {
+  // Verificar que existe la API key de OpenAI solo si es necesaria
+  if (EMBEDDING_MODEL === 'openai' && !process.env.OPENAI_API_KEY) {
     console.error('❌ Falta la variable de entorno OPENAI_API_KEY')
     console.error('Configúrala con: export OPENAI_API_KEY="tu-api-key"')
     process.exit(1)

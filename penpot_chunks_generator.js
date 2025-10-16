@@ -28,7 +28,7 @@ import slugify from 'slugify'
 import pLimit from 'p-limit'
 import dotenv from 'dotenv'
 import { fileURLToPath } from 'url'
-import { getEmbedding, EMBEDDINGS_MODEL, VEC_DIM } from './embeddings-service.js'
+import { getEmbedding, EMBEDDING_MODEL, OPENAI_MODEL, VEC_DIM } from './embeddings-service.js'
 
 // Configurar dotenv para cargar desde el directorio correcto
 const __filename = fileURLToPath(import.meta.url)
@@ -40,7 +40,7 @@ dotenv.config({ path: path.join(__dirname, '.env') })
 // -----------------------------
 const MAX_TOKENS_PER_CHUNK = 360     // target ~200–400 tokens (HTML → text)
 const OVERLAP_TOKENS = 60            // 10–20% overlap
-// VEC_DIM and EMBEDDINGS_MODEL imported from modules
+// VEC_DIM, EMBEDDING_MODEL, and OPENAI_MODEL imported from modules
 const CONCURRENCY = 2                // API concurrency
 
 // Configurable directory filtering - set to true to process only specific directories
@@ -279,7 +279,8 @@ function makeUrl(baseUrl, pagePathRel, sectionId) {
 async function generateChunks(docsRoot = '../penpot/docs/user-guide', pattern = '**/*.njk', options = {}) {
   const { baseUrl = 'https://help.penpot.app/user-guide/', lang = 'en', version = undefined } = options
 
-  if (!process.env.OPENAI_API_KEY) {
+  // Only require OpenAI API key if using OpenAI embeddings
+  if (EMBEDDING_MODEL === 'openai' && !process.env.OPENAI_API_KEY) {
     throw new Error('Missing OPENAI_API_KEY env var')
   }
 
@@ -419,7 +420,13 @@ async function generateChunks(docsRoot = '../penpot/docs/user-guide', pattern = 
         const textForUser = text
 
         console.log(`    🔗 Generating embedding for: ${sec.heading} (${tokens} tokens)`)
-        const embedding = await limit(() => getEmbedding(embeddingInput))
+        
+        // Only generate embeddings manually for OpenAI model
+        let embedding = null
+        if (EMBEDDING_MODEL === 'openai') {
+          embedding = await limit(() => getEmbedding(embeddingInput))
+        }
+        // For Orama, embeddings will be generated automatically by the plugin
 
         const chunk = {
           id,
@@ -449,7 +456,13 @@ async function generateChunks(docsRoot = '../penpot/docs/user-guide', pattern = 
           const searchableText = buildSearchableText({ breadcrumbs: breadcrumbsPart, heading: headingPart, summary: pSummary, text: pText })
           
           console.log(`    🔗 Generating embedding for: ${headingPart} (${estimateTokens(searchableText)} tokens)`)
-          const embedding = await limit(() => getEmbedding(searchableText))
+          
+          // Only generate embeddings manually for OpenAI model
+          let embedding = null
+          if (EMBEDDING_MODEL === 'openai') {
+            embedding = await limit(() => getEmbedding(searchableText))
+          }
+          // For Orama, embeddings will be generated automatically by the plugin
 
           const chunk = {
             id: `${pageId}#${sec.id}__${idx + 1}`,

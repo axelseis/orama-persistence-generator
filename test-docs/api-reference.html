@@ -1,0 +1,41 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>API Reference</title>
+    <meta name="description" content="Complete API reference documentation">
+</head>
+<body>
+    <h1>API Reference</h1>
+    <p>This document provides a complete reference for our REST API.</p>
+    
+    <h2>Authentication</h2>
+    <p>All API requests require authentication using API keys.</p>
+    <pre><code>curl -H "Authorization: Bearer YOUR_API_KEY" https://api.example.com/v1/users</code></pre>
+    
+    <h2>Endpoints</h2>
+    <p>Our API provides the following main endpoints:</p>
+    
+    <h3>Users</h3>
+    <p>Manage user accounts and profiles.</p>
+    <ul>
+        <li><code>GET /users</code> - List all users</li>
+        <li><code>POST /users</code> - Create a new user</li>
+        <li><code>GET /users/{id}</code> - Get user details</li>
+    </ul>
+    
+    <h3>Projects</h3>
+    <p>Manage projects and their settings.</p>
+    <ul>
+        <li><code>GET /projects</code> - List all projects</li>
+        <li><code>POST /projects</code> - Create a new project</li>
+        <li><code>PUT /projects/{id}</code> - Update project</li>
+    </ul>
+    
+    <h2>Error Handling</h2>
+    <p>The API returns standard HTTP status codes and error messages.</p>
+    <pre><code>{
+  "error": "Invalid API key",
+  "code": 401
+}</code></pre>
+</body>
+</html>

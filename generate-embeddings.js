@@ -1,11 +1,11 @@
 #!/usr/bin/env node
 /**
- * Script wrapper para generar embeddings de la documentación de Penpot
+ * Script wrapper to generate embeddings and create Orama persistence files
  * 
- * Este script:
- * 1. Genera embeddings de la documentación local de Penpot
- * 2. Los guarda en el directorio public como penpotRagToolContents.json
- * 3. Configura automáticamente las rutas y parámetros
+ * This script:
+ * 1. Generates embeddings from local documentation files
+ * 2. Saves them in the public directory as penpotRagToolContents.zip
+ * 3. Automatically configures paths and parameters
  */
 
 import fs from 'fs/promises'
@@ -18,18 +18,18 @@ import { runEmbeddingsPipeline, getEmbedding } from './embeddings-service.js'
 import { restore } from '@orama/plugin-data-persistence'
 import { search } from '@orama/orama'
 
-// Configurar dotenv para cargar desde el directorio correcto
+// Configure dotenv to load from the correct directory
 const __filename = fileURLToPath(import.meta.url)
 const __dirname = path.dirname(__filename)
 dotenv.config({ path: path.join(__dirname, '.env') })
 
-const DOCS_PATH = '../penpot/docs/user-guide'
+const DOCS_PATH = '../docs/user-guide'
 const OUTPUT_FILE = './public/penpotRagToolContents.zip'
-const PATTERN = '**/*.njk'
+const PATTERN = '**/*.{html,njk}'
 
 const OPTIONS = {
-  baseUrl: 'https://help.penpot.app/user-guide/',
-  lang: 'es',
+  baseUrl: 'https://example.com/user-guide/',
+  lang: 'en',
   version: 'local'
 }
 
@@ -47,14 +47,14 @@ async function performTestSearches(persistFilePath) {
   
   try {
     // Read the compressed persisted data
-    console.log('📖 Leyendo archivo comprimido...')
+    console.log('📖 Reading compressed file...')
     const compressedData = await fs.readFile(persistFilePath)
     
     // Decompress the data
-    console.log('🔄 Descomprimiendo datos...')
+    console.log('🔄 Decompressing data...')
     const decompressedData = await gunzipAsync(compressedData)
     const persistData = JSON.parse(decompressedData.toString('utf8'))
-    console.log('✅ Datos descomprimidos exitosamente')
+    console.log('✅ Data decompressed successfully')
     
     // Restore the database from persisted data
     console.log('🔄 Restoring database from persisted data...')

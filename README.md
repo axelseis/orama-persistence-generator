@@ -1,127 +1,212 @@
-# Penpot Embeddings Generator
+# Orama Persistence Generator
 
-Este repositorio contiene herramientas para generar embeddings vectoriales de la documentación de Penpot usando OpenAI, diseñado para alimentar sistemas RAG (Retrieval-Augmented Generation) locales.
+A tool for generating compressed persistence files for Orama databases with vector embeddings, designed to be used with the `@orama/plugin-data-persistence` plugin in browser environments.
 
-## Configuración
+## Overview
 
-### 1. Instalar dependencias
+This project generates a `.zip` file containing a complete Orama database with vector embeddings that can be restored using Orama's data persistence plugin. The generated persistence file uses binary format (Orama's default) for optimal compression, reducing file size from ~12MB (JSON) to ~7MB (binary).
+
+## Features
+
+- **Configurable Embedding Models**: Support for OpenAI embedding models and Orama's built-in embeddings
+- **Binary Persistence**: Generates compressed binary files for optimal browser performance
+- **Flexible Input**: Processes HTML or NJK files from configurable local directories
+- **Browser-Ready**: Generated files are optimized for browser environments
+
+## Installation
+
+### 1. Install dependencies
 ```bash
 npm install
 ```
 
-### 2. Configurar API Key de OpenAI
+### 2. Configure API Keys
 ```bash
-# Copia el archivo de ejemplo
+# Copy the example file
 cp env.example .env
 
-# Edita .env y configura tu API key
-OPENAI_API_KEY=tu-api-key-real-aqui
+# Edit .env and configure your API keys
+OPENAI_API_KEY=your-openai-api-key-here
 ```
 
-### 3. Verificar documentación local
-Asegúrate de que la documentación de Penpot esté disponible en:
-```
-../penpot/docs/user-guide/
+## Configuration
+
+### Environment Variables
+
+Create a `.env` file with the following variables:
+
+```bash
+# OpenAI API Key (required for OpenAI embeddings)
+OPENAI_API_KEY=your-api-key-here
+
+# Embedding Model Configuration
+EMBEDDING_MODEL=openai  # Options: 'openai' or 'orama'
+OPENAI_MODEL=text-embedding-ada-002  # OpenAI model for embeddings
+
+# Processing Configuration
+LANG=en
+VERSION=local
 ```
 
-## Uso
+### Embedding Model Options
 
-### Generar embeddings (método recomendado)
+- **OpenAI Models**: Uses OpenAI's embedding API with configurable models
+- **Orama Built-in**: Uses Orama's native embedding capabilities
+
+## Usage
+
+### Generate Persistence File (Recommended)
 ```bash
 npm run generate-embeddings
 ```
 
-### Ejecutar directamente
+### Run Directly
 ```bash
 node generate-embeddings.js
 ```
 
-### Ejecutar el script base con parámetros personalizados
+### Run with Custom Parameters
 ```bash
-node penpot_chunks_generator.js ../penpot/docs/user-guide "**/*.njk" --out ./public --lang es --version local
+node penpot_chunks_generator.js ../docs/user-guide "**/*.{html,njk}" --out ./public --lang en --version local
 ```
 
-## Archivos generados
+## Generated Files
 
-El script genera dos archivos en el directorio `public/`:
+The script generates a compressed persistence file in the `public/` directory:
 
-- **`pages.json`**: Metadatos de todas las páginas procesadas
-- **`chunks.json`**: Chunks de texto con sus embeddings vectoriales
+- **`penpotRagToolContents.zip`**: Binary persistence file containing the complete Orama database with embeddings
 
-## Estructura de datos
+## Data Structure
 
-### pages.json
+The generated persistence file contains:
+
+### Pages Metadata
 ```json
 {
   "id": "page-slug",
-  "path": "relative/path/to/file.njk",
-  "url": "https://help.penpot.app/user-guide/page/",
-  "title": "Título de la página",
-  "description": "Descripción de la página",
-  "lang": "es",
+  "path": "relative/path/to/file.html",
+  "url": "https://example.com/page/",
+  "title": "Page Title",
+  "description": "Page description",
+  "lang": "en",
   "version": "local",
   "sectionCount": 5,
   "headings": ["H2", "H3", ...],
   "kind": "guide|tutorial|reference",
-  "searchableText": "texto completo para búsqueda"
+  "searchableText": "full text for search"
 }
 ```
 
-### chunks.json
+### Chunks with Embeddings
 ```json
 {
   "id": "page-slug#section-id",
   "pageId": "page-slug",
-  "url": "https://help.penpot.app/user-guide/page/#section",
-  "sourcePath": "relative/path/to/file.njk",
-  "lang": "es",
+  "url": "https://example.com/page/#section",
+  "sourcePath": "relative/path/to/file.html",
+  "lang": "en",
   "version": "local",
-  "breadcrumbs": ["Página", "Sección H2", "Sección H3"],
+  "breadcrumbs": ["Page", "H2 Section", "H3 Section"],
   "sectionLevel": 2,
   "sectionId": "section-id",
-  "heading": "Título de la sección",
-  "text": "Contenido de la sección",
-  "summary": "Resumen de la sección",
+  "heading": "Section title",
+  "text": "Section content",
+  "summary": "Section summary",
   "hasCode": true,
   "codeLangs": ["javascript", "css"],
-  "links": [{"text": "Enlace", "href": "/url"}],
-  "images": [{"alt": "Descripción", "src": "/image.png"}],
+  "links": [{"text": "Link", "href": "/url"}],
+  "images": [{"alt": "Description", "src": "/image.png"}],
   "tokens": 150,
-  "embedding": [0.1, 0.2, ...], // Vector de 1536 dimensiones
+  "embedding": [0.1, 0.2, ...], // Vector of configurable dimensions
   "vectorDim": 1536,
-  "searchableText": "texto completo para embeddings"
+  "searchableText": "full text for embeddings"
 }
 ```
 
-## Configuración avanzada
+## Advanced Configuration
 
-### Parámetros del script base
+### Script Parameters
 
-- `docsRoot`: Directorio raíz de la documentación (default: `../penpot/docs/user-guide`)
-- `pattern`: Patrón de archivos a procesar (default: `**/*.njk`)
-- `--out`: Directorio de salida (default: `./public`)
-- `--lang`: Idioma (default: `es`)
-- `--version`: Versión (default: `local`)
-- `--baseUrl`: URL base para enlaces (default: `https://help.penpot.app/user-guide/`)
+- `docsRoot`: Root directory of documentation (default: `../docs/user-guide`)
+- `pattern`: File pattern to process (default: `**/*.{html,njk}`)
+- `--out`: Output directory (default: `./public`)
+- `--lang`: Language (default: `en`)
+- `--version`: Version (default: `local`)
+- `--baseUrl`: Base URL for links (default: `https://example.com/`)
 
-### Variables de entorno
+### Embedding Model Configuration
 
-- `OPENAI_API_KEY`: API key de OpenAI (requerida)
-- `OPENAI_MODEL`: Modelo de embeddings (default: `text-embedding-ada-002`)
+#### OpenAI Models
+```bash
+EMBEDDING_MODEL=openai
+OPENAI_MODEL=text-embedding-ada-002  # or text-embedding-3-small, text-embedding-3-large
+```
+
+#### Orama Built-in Embeddings
+```bash
+EMBEDDING_MODEL=orama
+```
+
+## Browser Integration
+
+To use the generated persistence file in a browser environment:
+
+```javascript
+import { create, insertMultiple } from '@orama/orama'
+import { restore } from '@orama/plugin-data-persistence'
+
+// Load the persistence file
+const response = await fetch('./penpotRagToolContents.zip')
+const arrayBuffer = await response.arrayBuffer()
+
+// Restore the database
+const db = await restore(arrayBuffer)
+
+// Search the restored database
+const results = await search(db, {
+  term: 'your search query',
+  limit: 10
+})
+```
 
 ## Troubleshooting
 
 ### Error: "Missing OPENAI_API_KEY"
-Configura la variable de entorno:
+Configure the environment variable:
 ```bash
-export OPENAI_API_KEY="tu-api-key"
+export OPENAI_API_KEY="your-api-key"
 ```
 
-### Error: "No se encontró la documentación"
-Verifica que la documentación esté en `../penpot/docs/user-guide/`
+### Error: "Documentation not found"
+Verify that the documentation is available in `../docs/user-guide/`
 
-### Error de dependencias
-Reinstala las dependencias:
+### Dependency Errors
+Reinstall dependencies:
 ```bash
 npm install
 ```
+
+### Large File Sizes
+The binary format significantly reduces file size compared to JSON. If you need even smaller files, consider:
+- Reducing the number of processed files
+- Adjusting chunk sizes
+- Using different embedding models
+
+## Performance Notes
+
+- **Binary Format**: Reduces file size by ~40% compared to JSON
+- **Browser Optimization**: Generated files are optimized for browser environments
+- **Memory Efficient**: Uses streaming for large file processing
+- **Configurable Compression**: Supports different compression levels
+
+## Contributing
+
+1. Fork the repository
+2. Create a feature branch
+3. Make your changes
+4. Add tests if applicable
+5. Submit a pull request
+
+## License
+
+MIT License - see LICENSE file for details

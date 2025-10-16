@@ -1,0 +1,35 @@
+{
+  "name": "orama-persistence-generator",
+  "version": "1.0.0",
+  "description": "Generate compressed persistence files for Orama databases with vector embeddings for browser environments",
+  "main": "generate-embeddings.js",
+  "type": "module",
+  "scripts": {
+    "generate-embeddings": "node generate-embeddings.js",
+    "test": "node test-config.js"
+  },
+  "keywords": [
+    "orama",
+    "persistence",
+    "embeddings",
+    "openai",
+    "rag",
+    "documentation",
+    "vector-search"
+  ],
+  "author": "Axel claver",
+  "license": "MIT",
+  "dependencies": {
+    "dotenv": "^16.3.1",
+    "openai": "^4.20.1",
+    "@orama/orama": "^2.0.0",
+    "@orama/plugin-data-persistence": "^2.0.0",
+    "glob": "^10.3.10",
+    "gray-matter": "^4.0.3",
+    "nunjucks": "^3.2.4",
+    "cheerio": "^1.0.0-rc.12"
+  },
+  "engines": {
+    "node": ">=18.0.0"
+  }
+}

@@ -13,7 +13,9 @@ yarn-error.log*
 
 # Generated files
 public/
-*.json
+# Don't ignore package.json and other important JSON files
+!package.json
+!package-lock.json
 *.zip
 *.gz
 

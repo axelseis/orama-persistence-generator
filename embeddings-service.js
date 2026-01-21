@@ -190,10 +190,14 @@ async function addChunkToOrama(chunk) {
     images: JSON.stringify(chunk.images)
   }
   
-  // For OpenAI embeddings, we need to generate the embedding manually
+  // For OpenAI embeddings, reuse existing vectors when provided to avoid double calls
   if (EMBEDDING_MODEL === 'openai') {
     try {
-      chunkForOrama.embedding = await getEmbedding(chunk.searchableText)
+      if (Array.isArray(chunk.embedding) && chunk.embedding.length === VEC_DIM) {
+        chunkForOrama.embedding = chunk.embedding
+      } else {
+        chunkForOrama.embedding = await getEmbedding(chunk.searchableText)
+      }
       chunkForOrama.vectorDim = VEC_DIM
     } catch (error) {
       console.error(`❌ Error generating embedding for chunk: ${chunk.heading}`)

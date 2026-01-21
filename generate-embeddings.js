@@ -4,7 +4,7 @@
  * 
  * This script:
  * 1. Generates embeddings from local documentation files
- * 2. Saves them in the public directory as penpotRagToolContents.zip
+ * 2. Saves them in the public directory as designRagToolContents.zip
  * 3. Automatically configures paths and parameters
  */
 
@@ -23,14 +23,16 @@ const __filename = fileURLToPath(import.meta.url)
 const __dirname = path.dirname(__filename)
 dotenv.config({ path: path.join(__dirname, '.env') })
 
-const DOCS_PATH = './test-docs'
-const OUTPUT_FILE = './public/penpotRagToolContents.zip'
-const PATTERN = '**/*.html'
+const DOCS_PATH = process.env.DOCS_PATH || './test-docs'
+const OUTPUT_DIR = process.env.OUTPUT_DIR || './public'
+const OUTPUT_FILENAME = process.env.OUTPUT_FILENAME || 'designRagToolContents.zip'
+const OUTPUT_FILE = path.join(OUTPUT_DIR, OUTPUT_FILENAME)
+const PATTERN = process.env.DOCS_PATTERN || '**/*.html'
 
 const OPTIONS = {
   baseUrl: 'https://example.com/user-guide/',
-  lang: 'en',
-  version: 'local'
+  lang: process.env.LANG || 'en',
+  version: process.env.VERSION || 'local'
 }
 
 // Promisify compression functions
@@ -62,26 +64,61 @@ async function performTestSearches(persistFilePath) {
     console.log('✅ Database restored successfully')
     
     const testQueries = [
-      'how to create a triangle',
-      'how to create a component',
-      'interface elements',
-      'design components',
-      'user interface',
-      'penpot basics',
-      'getting started'
+      {
+        query: 'tactile maximalism soft rounded bounce gel',
+        expectedPath: 'tactile-maximalism.md'
+      },
+      {
+        query: 'apothecary botanical vintage serif labels',
+        expectedPath: 'apothecary-aesthetic.md'
+      },
+      {
+        query: 'neobrutalism bold contrast oversized type',
+        expectedPath: 'neobrutalism.md'
+      },
+      {
+        query: 'glassmorphism translucent blur layers',
+        expectedPath: 'glassmorphism.md'
+      },
+      {
+        query: 'anti-ai crafting handmade texture paper',
+        expectedPath: 'anti-ai-crafting.md'
+      },
+      {
+        query: 'multi-device ux continuity responsive systems',
+        expectedPath: 'multi-device-ux.md'
+      },
+      {
+        query: 'kinetic typography animated text motion',
+        expectedPath: 'kinetic-typography.md'
+      },
+      {
+        query: 'organic minimalism earthy calm natural',
+        expectedPath: 'organic-minimalism.md'
+      },
+      {
+        query: 'pure steel metallic neon technical',
+        expectedPath: 'pure-steel.md'
+      },
+      {
+        query: 'narrative pop editorial storytelling',
+        expectedPath: 'narrative-pop.md'
+      }
     ]
     
-    for (const query of testQueries) {
-      console.log(`\n🔎 Searching for: "${query}"`)
+    let hasFailures = false
+    
+    for (const test of testQueries) {
+      console.log(`\n🔎 Searching for: "${test.query}"`)
       
       try {
         const results = await search(restoredDB, {
           mode: 'vector',
           vector: {
-            value: await getEmbedding(query),
+            value: await getEmbedding(test.query),
             property: 'embedding'
           },
-          term: query,
+          term: test.query,
           limit: 5,
           tolerance: 0.8
         })
@@ -92,11 +129,22 @@ async function performTestSearches(persistFilePath) {
           console.log(`      Path: ${hit.document.sourcePath}`)
           console.log(`      Summary: ${hit.document.summary.substring(0, 100)}...`)
         })
+
+        const matched = results.hits.some(hit => hit.document.sourcePath === test.expectedPath)
+        if (!matched) {
+          hasFailures = true
+          console.warn(`   ⚠️ Expected top results to include: ${test.expectedPath}`)
+        }
       } catch (error) {
-        console.error(`   ❌ Error searching for "${query}":`, error.message)
+        hasFailures = true
+        console.error(`   ❌ Error searching for "${test.query}":`, error.message)
       }
     }
-    
+
+    if (hasFailures) {
+      throw new Error('One or more test searches did not return the expected content.')
+    }
+
     console.log('\n✅ Test searches completed')
   } catch (error) {
     console.error('❌ Error performing test searches:', error.message)
@@ -150,7 +198,7 @@ async function main() {
     const stats = await fs.stat(OUTPUT_FILE)
     const originalSize = Buffer.byteLength(jsonString, 'utf8')
     const compressionRatio = ((originalSize - stats.size) / originalSize * 100).toFixed(1)
-    console.log(`📄 penpotRagToolContents.json: ${stats.size} bytes (comprimido)`)
+    console.log(`📄 designRagToolContents.json: ${stats.size} bytes (comprimido)`)
     console.log(`📊 Tamaño original: ${originalSize} bytes`)
     console.log(`📊 Ratio de compresión: ${compressionRatio}%`)
     

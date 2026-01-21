@@ -28,6 +28,7 @@ import slugify from 'slugify'
 import pLimit from 'p-limit'
 import dotenv from 'dotenv'
 import { fileURLToPath } from 'url'
+import { marked } from 'marked'
 import { getEmbedding, EMBEDDING_MODEL, OPENAI_MODEL, VEC_DIM } from './embeddings-service.js'
 
 // Configurar dotenv para cargar desde el directorio correcto
@@ -316,7 +317,10 @@ async function generateChunks(docsRoot = '../penpot/docs/user-guide', pattern = 
     const raw = await fs.readFile(full, 'utf8')
     const fm = matter(raw)
     const front = fm.data || {}
-    const html = fm.content || ''
+    const ext = path.extname(rel).toLowerCase()
+    const html = (ext === '.md' || ext === '.markdown')
+      ? marked.parse(fm.content || '')
+      : (fm.content || '')
 
     const $ = cleanHtml(load(html))
 

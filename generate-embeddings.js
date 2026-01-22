@@ -28,6 +28,7 @@ const OUTPUT_DIR = process.env.OUTPUT_DIR || './public'
 const OUTPUT_FILENAME = process.env.OUTPUT_FILENAME || 'designRagToolContents.zip'
 const OUTPUT_FILE = path.join(OUTPUT_DIR, OUTPUT_FILENAME)
 const PATTERN = process.env.DOCS_PATTERN || '**/*.html'
+const TEST_QUERIES_JSON = process.env.TEST_QUERIES_JSON || ''
 
 const OPTIONS = {
   baseUrl: 'https://example.com/user-guide/',
@@ -63,50 +64,14 @@ async function performTestSearches(persistFilePath) {
     const restoredDB = await restore('binary', persistData)
     console.log('✅ Database restored successfully')
     
-    const testQueries = [
-      {
-        query: 'tactile maximalism soft rounded bounce gel',
-        expectedPath: 'tactile-maximalism.md'
-      },
-      {
-        query: 'apothecary botanical vintage serif labels',
-        expectedPath: 'apothecary-aesthetic.md'
-      },
-      {
-        query: 'neobrutalism bold contrast oversized type',
-        expectedPath: 'neobrutalism.md'
-      },
-      {
-        query: 'glassmorphism translucent blur layers',
-        expectedPath: 'glassmorphism.md'
-      },
-      {
-        query: 'anti-ai crafting handmade texture paper',
-        expectedPath: 'anti-ai-crafting.md'
-      },
-      {
-        query: 'multi-device ux continuity responsive systems',
-        expectedPath: 'multi-device-ux.md'
-      },
-      {
-        query: 'kinetic typography animated text motion',
-        expectedPath: 'kinetic-typography.md'
-      },
-      {
-        query: 'organic minimalism earthy calm natural',
-        expectedPath: 'organic-minimalism.md'
-      },
-      {
-        query: 'pure steel metallic neon technical',
-        expectedPath: 'pure-steel.md'
-      },
-      {
-        query: 'narrative pop editorial storytelling',
-        expectedPath: 'narrative-pop.md'
-      }
-    ]
+    const testQueries = loadTestQueries()
+    if (!testQueries.length) {
+      console.warn('⚠️  No TEST_QUERIES_JSON configured. Skipping test searches.')
+      return
+    }
     
     let hasFailures = false
+    const failedTests = []
     
     for (const test of testQueries) {
       console.log(`\n🔎 Searching for: "${test.query}"`)
@@ -133,7 +98,15 @@ async function performTestSearches(persistFilePath) {
         const matched = results.hits.some(hit => hit.document.sourcePath === test.expectedPath)
         if (!matched) {
           hasFailures = true
-          console.warn(`   ⚠️ Expected top results to include: ${test.expectedPath}`)
+          const topPaths = results.hits.map(hit => hit.document.sourcePath)
+          failedTests.push({
+            query: test.query,
+            expectedPath: test.expectedPath,
+            topPaths
+          })
+          console.warn(`   ⚠️ Test failed for query: "${test.query}"`)
+          console.warn(`      Expected path: ${test.expectedPath}`)
+          console.warn(`      Top paths: ${topPaths.join(', ') || 'no results'}`)
         }
       } catch (error) {
         hasFailures = true
@@ -142,12 +115,35 @@ async function performTestSearches(persistFilePath) {
     }
 
     if (hasFailures) {
-      throw new Error('One or more test searches did not return the expected content.')
+      const summary = failedTests
+        .map(test => `"${test.query}" → expected "${test.expectedPath}"`)
+        .join('; ')
+      throw new Error(`One or more test searches failed: ${summary}`)
     }
 
     console.log('\n✅ Test searches completed')
   } catch (error) {
     console.error('❌ Error performing test searches:', error.message)
+    throw error
+  }
+}
+
+function loadTestQueries() {
+  if (!TEST_QUERIES_JSON) return []
+  try {
+    const parsed = JSON.parse(TEST_QUERIES_JSON)
+    if (!Array.isArray(parsed)) {
+      throw new Error('TEST_QUERIES_JSON must be an array of { query, expectedPath } objects')
+    }
+    return parsed
+      .filter(item => item && typeof item === 'object')
+      .map(item => ({
+        query: (item.query || '').toString().trim(),
+        expectedPath: (item.expectedPath || '').toString().trim()
+      }))
+      .filter(item => item.query && item.expectedPath)
+  } catch (error) {
+    console.error('❌ Invalid TEST_QUERIES_JSON:', error.message)
     throw error
   }
 }

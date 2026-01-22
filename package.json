@@ -26,8 +26,8 @@
   "author": "Axel claver",
   "license": "MIT",
   "dependencies": {
-    "@orama/orama": "^2.0.0",
-    "@orama/plugin-data-persistence": "^2.0.0",
+    "@orama/orama": "^3.1.15",
+    "@orama/plugin-data-persistence": "^3.1.15",
     "@orama/plugin-embeddings": "*",
     "@tensorflow/tfjs-node": "^4.15.0",
     "cheerio": "^1.0.0-rc.12",

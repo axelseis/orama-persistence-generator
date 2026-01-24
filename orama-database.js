@@ -24,24 +24,8 @@ const ORAMA_SCHEMA = {
   id: 'string',
   pageId: 'string',
   url: 'string',
-  sourcePath: 'string',
-  lang: 'string',
-  version: 'string',
-  breadcrumbs: 'string',
-  sectionLevel: 'number',
-  sectionId: 'string',
-  heading: 'string',
-  hasCode: 'boolean',
-  codeLangs: 'string',
   text: 'string',
-  summary: 'string',
-  isDefinition: 'boolean',
-  tokens: 'number',
-  embedding: 'vector[1536]',
-  vectorDim: 'number',
-  searchableText: 'string',
-  links: 'string',
-  images: 'string'
+  embedding: 'vector[1536]'
 }
 
 // -----------------------------
@@ -77,21 +61,20 @@ async function addChunkToOrama(chunk) {
     throw new Error('Orama database not initialized')
   }
   
-  // Convert arrays to strings for Orama storage
   const chunkForOrama = {
-    ...chunk,
-    breadcrumbs: JSON.stringify(chunk.breadcrumbs),
-    codeLangs: JSON.stringify(chunk.codeLangs),
-    links: JSON.stringify(chunk.links),
-    images: JSON.stringify(chunk.images)
+    id: chunk.id,
+    pageId: chunk.pageId,
+    url: chunk.url,
+    text: chunk.text,
+    embedding: chunk.embedding
   }
   
   try {
     await insert(oramaDB, chunkForOrama)
-    console.log(`📝 Added chunk to Orama: ${chunk.heading}`)
+    console.log(`📝 Added chunk to Orama: ${chunk.id}`)
   } catch (error) {
     if (error.message.includes('already exists')) {
-      console.log(`⚠️  Chunk already exists, skipping: ${chunk.heading} (ID: ${chunk.id})`)
+      console.log(`⚠️  Chunk already exists, skipping: ${chunk.id}`)
     } else {
       throw error
     }
@@ -133,9 +116,9 @@ async function performTestSearches(getEmbedding) {
       
       console.log(`   Found ${results.count} results:`)
       results.hits.forEach((hit, index) => {
-        console.log(`   ${index + 1}. ${hit.document.heading} (${hit.score.toFixed(3)})`)
-        console.log(`      Path: ${hit.document.sourcePath}`)
-        console.log(`      Summary: ${hit.document.summary.substring(0, 100)}...`)
+        const preview = (hit.document.text || '').slice(0, 100).replace(/\s+/g, ' ')
+        console.log(`   ${index + 1}. ${hit.document.url || hit.document.pageId} (${hit.score.toFixed(3)})`)
+        console.log(`      Text: ${preview}${preview.length === 100 ? '...' : ''}`)
       })
     } catch (error) {
       console.error(`   ❌ Error searching for "${query}":`, error.message)

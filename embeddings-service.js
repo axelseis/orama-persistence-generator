@@ -42,24 +42,8 @@ const ORAMA_SCHEMA = {
   id: 'string',
   pageId: 'string',
   url: 'string',
-  sourcePath: 'string',
-  lang: 'string',
-  version: 'string',
-  breadcrumbs: 'string',
-  sectionLevel: 'number',
-  sectionId: 'string',
-  heading: 'string',
-  hasCode: 'boolean',
-  codeLangs: 'string',
   text: 'string',
-  summary: 'string',
-  isDefinition: 'boolean',
-  tokens: 'number',
-  embedding: `vector[${VEC_DIM}]`,
-  vectorDim: 'number',
-  searchableText: 'string',
-  links: 'string',
-  images: 'string'
+  embedding: `vector[${VEC_DIM}]`
 }
 
 // -----------------------------
@@ -155,11 +139,20 @@ async function initializeOramaDB() {
         defaultProperty: 'embedding',
         onInsert: {
           generate: true,
-          properties: ['searchableText'],
+          properties: ['text'],
           verbose: true,
         }
       }
     })
+    // Wrap hooks to ensure Orama awaits them (compiled functions are not AsyncFunction)
+    if (typeof embeddingsPlugin.beforeSearch === 'function') {
+      const originalBeforeSearch = embeddingsPlugin.beforeSearch
+      embeddingsPlugin.beforeSearch = async (...args) => originalBeforeSearch(...args)
+    }
+    if (typeof embeddingsPlugin.beforeInsert === 'function') {
+      const originalBeforeInsert = embeddingsPlugin.beforeInsert
+      embeddingsPlugin.beforeInsert = async (...args) => originalBeforeInsert(...args)
+    }
     plugins.push(embeddingsPlugin)
   }
   
@@ -181,13 +174,11 @@ async function addChunkToOrama(chunk) {
     throw new Error('Orama database not initialized')
   }
   
-  // Convert arrays to strings for Orama storage
   const chunkForOrama = {
-    ...chunk,
-    breadcrumbs: JSON.stringify(chunk.breadcrumbs),
-    codeLangs: JSON.stringify(chunk.codeLangs),
-    links: JSON.stringify(chunk.links),
-    images: JSON.stringify(chunk.images)
+    id: chunk.id,
+    pageId: chunk.pageId,
+    url: chunk.url,
+    text: chunk.text
   }
   
   // For OpenAI embeddings, reuse existing vectors when provided to avoid double calls
@@ -196,25 +187,23 @@ async function addChunkToOrama(chunk) {
       if (Array.isArray(chunk.embedding) && chunk.embedding.length === VEC_DIM) {
         chunkForOrama.embedding = chunk.embedding
       } else {
-        chunkForOrama.embedding = await getEmbedding(chunk.searchableText)
+        chunkForOrama.embedding = await getEmbedding(chunk.text)
       }
-      chunkForOrama.vectorDim = VEC_DIM
     } catch (error) {
-      console.error(`❌ Error generating embedding for chunk: ${chunk.heading}`)
+      console.error(`❌ Error generating embedding for chunk: ${chunk.id}`)
       throw error
     }
   } else {
     // For Orama embeddings, remove the embedding field so the plugin can generate it
     delete chunkForOrama.embedding
-    chunkForOrama.vectorDim = VEC_DIM
   }
   
   try {
     await insert(oramaDB, chunkForOrama)
-    console.log(`📝 Added chunk to Orama: ${chunk.heading}`)
+    console.log(`📝 Added chunk to Orama: ${chunk.id}`)
   } catch (error) {
     if (error.message.includes('already exists')) {
-      console.log(`⚠️  Chunk already exists, skipping: ${chunk.heading} (ID: ${chunk.id})`)
+      console.log(`⚠️  Chunk already exists, skipping: ${chunk.id}`)
     } else {
       throw error
     }

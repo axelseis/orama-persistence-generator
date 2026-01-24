@@ -1,0 +1,50 @@
+{
+  "docsPath": "../penpot/docs/user-guide",
+  "docsPattern": "**/*.{html,njk}",
+  "outputDir": "../penpot-wizard/public",
+  "outputFilename": "penpotRagToolContents.zip",
+  "embeddingModel": "orama",
+  "baseUrl": "https://help.penpot.app/user-guide/",
+  "testQueries": [
+    {
+      "query": "components",
+      "expectedPath": "components/index.njk"
+    },
+    {
+      "query": "custom fonts",
+      "expectedPath": "custom-fonts/index.njk"
+    },
+    {
+      "query": "design tokens",
+      "expectedPath": "design-tokens/index.njk"
+    },
+    {
+      "query": "export",
+      "expectedPath": "exporting/index.njk"
+    },
+    {
+      "query": "import export",
+      "expectedPath": "import-export/index.njk"
+    },
+    {
+      "query": "inspect mode",
+      "expectedPath": "inspect/index.njk"
+    },
+    {
+      "query": "libraries",
+      "expectedPath": "libraries/index.njk"
+    },
+    {
+      "query": "prototyping",
+      "expectedPath": "prototyping/index.njk"
+    },
+    {
+      "query": "plugins",
+      "expectedPath": "plugins/index.njk"
+    },
+    {
+      "query": "shortcuts panel",
+      "expectedPath": "workspace-basics/index.njk"
+    }
+  ]
+}

@@ -1,0 +1,50 @@
+{
+  "docsPath": "./stylesRAG",
+  "docsPattern": "**/*.md",
+  "outputDir": "../penpot-wizard/public",
+  "outputFilename": "designRagToolContents.zip",
+  "embeddingModel": "orama",
+  "baseUrl": null,
+  "testQueries": [
+    {
+      "query": "tactile maximalism soft rounded bounce gel",
+      "expectedPath": "tactile-maximalism.md"
+    },
+    {
+      "query": "apothecary botanical vintage serif labels",
+      "expectedPath": "apothecary-aesthetic.md"
+    },
+    {
+      "query": "neobrutalism bold contrast oversized type",
+      "expectedPath": "neobrutalism.md"
+    },
+    {
+      "query": "glassmorphism translucent blur layers",
+      "expectedPath": "glassmorphism.md"
+    },
+    {
+      "query": "anti-ai crafting handmade texture paper",
+      "expectedPath": "anti-ai-crafting.md"
+    },
+    {
+      "query": "multi-device ux continuity responsive systems",
+      "expectedPath": "multi-device-ux.md"
+    },
+    {
+      "query": "kinetic typography animated text motion",
+      "expectedPath": "kinetic-typography.md"
+    },
+    {
+      "query": "organic minimalism earthy calm natural",
+      "expectedPath": "organic-minimalism.md"
+    },
+    {
+      "query": "pure steel metallic neon technical",
+      "expectedPath": "pure-steel.md"
+    },
+    {
+      "query": "narrative pop editorial storytelling",
+      "expectedPath": "narrative-pop.md"
+    }
+  ]
+}

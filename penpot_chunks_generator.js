@@ -124,58 +124,6 @@ function toSlug(str) {
   })
 }
 
-// Build breadcrumbs like [PageTitle, H2, H3]
-function buildBreadcrumbs(pageTitle, h2, h3) {
-  const crumbs = [pageTitle].filter(Boolean)
-  if (h2) crumbs.push(h2)
-  if (h3) crumbs.push(h3)
-  return crumbs
-}
-
-function buildSearchableText({ breadcrumbs, heading, summary, text }) {
-  const parts = []
-  if (breadcrumbs?.length) parts.push(breadcrumbs.join(' > '))
-  if (heading) parts.push(heading)
-  if (summary) parts.push(summary)
-  if (text) parts.push(text)
-  return normalizeWhitespace(parts.join('\n\n'))
-}
-
-function firstSentences(text, maxChars = 240) {
-  const sents = splitIntoSentences(text)
-  let out = ''
-  for (const s of sents) {
-    if (!out) out = s
-    else if ((out + ' ' + s).length <= maxChars) out += ' ' + s
-    else break
-  }
-  return out || text.slice(0, maxChars)
-}
-
-function extractLinks($scope) {
-  return $scope('a[href]')
-    .map((_, a) => ({ text: $scope(a).text().trim(), href: $scope(a).attr('href') }))
-    .get()
-    .filter(x => x.text || x.href)
-}
-
-function extractImages($scope) {
-  return $scope('img')
-    .map((_, img) => ({ alt: $scope(img).attr('alt') || '', src: $scope(img).attr('src') || '' }))
-    .get()
-    .filter(x => x.src)
-}
-
-function extractCodeLangs($scope) {
-  const langs = new Set()
-  $scope('pre code').each((_, el) => {
-    const cls = $scope(el).attr('class') || ''
-    const m = cls.match(/language-([a-z0-9+#]+)/i)
-    if (m) langs.add(m[1].toLowerCase())
-  })
-  return [...langs]
-}
-
 function cleanHtml($) {
   // remove boilerplate-ish areas
   $('nav, header, footer, script, style, aside.toc, .toc, .breadcrumb').remove()
@@ -238,14 +186,6 @@ function collectSections($) {
   return sections
 }
 
-function deriveKindFromPath(p) {
-  const s = p.toLowerCase()
-  if (s.includes('/reference') || s.endsWith('/api') || s.includes('/api/')) return 'reference'
-  if (s.includes('/tutorial')) return 'tutorial'
-  if (s.includes('/release')) return 'release'
-  return 'guide'
-}
-
 function makeUrl(baseUrl, pagePathRel, sectionId) {
   if (!baseUrl) return ''
   const noExt = pagePathRel.replace(/\.(njk|html?)$/i, '')
@@ -272,13 +212,11 @@ function makeUrl(baseUrl, pagePathRel, sectionId) {
  * @param {string} docsRoot - Path to the documentation root directory
  * @param {string} pattern - Glob pattern for files to process
  * @param {Object} options - Configuration options
- * @param {string} options.baseUrl - Base URL for generated links
- * @param {string} options.lang - Language code
- * @param {string} options.version - Version string
+ * @param {string|null} options.baseUrl - Base URL for generated links
  * @returns {Promise<{pages: Array, chunks: Array}>} Generated pages and chunks
  */
 async function generateChunks(docsRoot = '../penpot/docs/user-guide', pattern = '**/*.njk', options = {}) {
-  const { baseUrl = 'https://help.penpot.app/user-guide/', lang = 'en', version = undefined } = options
+  const { baseUrl = 'https://help.penpot.app/user-guide/' } = options
 
   // Only require OpenAI API key if using OpenAI embeddings
   if (EMBEDDING_MODEL === 'openai' && !process.env.OPENAI_API_KEY) {
@@ -335,26 +273,16 @@ async function generateChunks(docsRoot = '../penpot/docs/user-guide', pattern = 
     console.log(`  📝 Title: ${pageTitle}`)
     console.log(`  🏷️  Sections: ${headings.length}`)
 
-    const pageSearchableText = normalizeWhitespace([
-      pageTitle,
-      pageDesc,
-      headings.join('; ')
-    ].filter(Boolean).join('\n'))
-
     const pageDoc = {
       id: pageId,
       path: rel,
       url: pageUrl,
       title: pageTitle,
       description: pageDesc || undefined,
-      lang,
-      version,
       sectionCount: 0,
       headings,
       keywords: undefined,
-      kind: deriveKindFromPath(rel),
-      updatedAt: front.updatedAt || undefined,
-      searchableText: pageSearchableText
+      updatedAt: front.updatedAt || undefined
     }
 
     // SECTIONS → CHUNKS
@@ -371,77 +299,31 @@ async function generateChunks(docsRoot = '../penpot/docs/user-guide', pattern = 
       const text = htmlToText($frag, container)
       if (!text) continue
 
-      // Identify h2/h3 ancestors for breadcrumbs
-      let h2Heading = ''
-      let h3Heading = ''
-      if (sec.level === 2) h2Heading = sec.heading
-      if (sec.level === 3) h3Heading = sec.heading
-
-      // find previous h2 for h3 sections
-      if (sec.level === 3) {
-        for (let i = sections.indexOf(sec) - 1; i >= 0; i--) {
-          if (sections[i].level === 2) { h2Heading = sections[i].heading; break }
-          if (sections[i].level === 1) break
-        }
-      }
-
-      const breadcrumbs = buildBreadcrumbs(pageTitle, h2Heading || (sec.level === 1 ? sec.heading : ''), (sec.level === 3 ? sec.heading : ''))
-
-      // Summary
-      const summary = firstSentences(text)
-
-      // Links / Images / Code langs inside this section
-      const links = extractLinks($frag)
-      const images = extractImages($frag)
-      const codeLangs = extractCodeLangs($frag)
-      const hasCode = codeLangs.length > 0
-
       const baseChunk = {
         pageId: pageId,
-        url: makeUrl(baseUrl, rel, sec.id),
-        sourcePath: rel,
-        lang,
-        version,
-        breadcrumbs,
-        sectionLevel: (sec.level >= 1 && sec.level <= 3) ? sec.level : 3,
-        sectionId: sec.id,
-        heading: sec.heading,
-        hasCode,
-        codeLangs,
-        links,
-        images
+        url: makeUrl(baseUrl, rel, sec.id)
       }
 
-      // Compose a draft searchableText to decide chunking
-      const bodySearchable = buildSearchableText({ breadcrumbs, heading: sec.heading, summary, text })
-      const tokenCount = estimateTokens(bodySearchable)
+      const tokenCount = estimateTokens(text)
 
       if (tokenCount <= MAX_TOKENS_PER_CHUNK) {
-        const searchableText = bodySearchable
-        const embeddingInput = searchableText // same as suggested
         const id = `${pageId}#${sec.id}`
-        const tokens = estimateTokens(embeddingInput)
-        const textForUser = text
+        const tokens = estimateTokens(text)
 
         console.log(`    🔗 Generating embedding for: ${sec.heading} (${tokens} tokens)`)
         
         // Only generate embeddings manually for OpenAI model
         let embedding = null
         if (EMBEDDING_MODEL === 'openai') {
-          embedding = await limit(() => getEmbedding(embeddingInput))
+          embedding = await limit(() => getEmbedding(text))
         }
         // For Orama, embeddings will be generated automatically by the plugin
 
         const chunk = {
           id,
           ...baseChunk,
-          text: textForUser,
-          summary,
-          isDefinition: /^(what is|define|definition|overview)/i.test(sec.heading || '') || undefined,
-          tokens,
-          embedding,
-          vectorDim: VEC_DIM,
-          searchableText
+          text,
+          embedding
         }
         
         // Add chunk to chunks array
@@ -454,17 +336,14 @@ async function generateChunks(docsRoot = '../penpot/docs/user-guide', pattern = 
         
         for (let idx = 0; idx < parts.length; idx++) {
           const pText = parts[idx]
-          const pSummary = firstSentences(pText)
-          const breadcrumbsPart = [...breadcrumbs]
           const headingPart = sec.heading + ` (part ${idx + 1})`
-          const searchableText = buildSearchableText({ breadcrumbs: breadcrumbsPart, heading: headingPart, summary: pSummary, text: pText })
           
-          console.log(`    🔗 Generating embedding for: ${headingPart} (${estimateTokens(searchableText)} tokens)`)
+          console.log(`    🔗 Generating embedding for: ${headingPart} (${estimateTokens(pText)} tokens)`)
           
           // Only generate embeddings manually for OpenAI model
           let embedding = null
           if (EMBEDDING_MODEL === 'openai') {
-            embedding = await limit(() => getEmbedding(searchableText))
+            embedding = await limit(() => getEmbedding(pText))
           }
           // For Orama, embeddings will be generated automatically by the plugin
 
@@ -472,12 +351,7 @@ async function generateChunks(docsRoot = '../penpot/docs/user-guide', pattern = 
             id: `${pageId}#${sec.id}__${idx + 1}`,
             ...baseChunk,
             text: pText,
-            summary: pSummary,
-            isDefinition: undefined,
-            tokens: estimateTokens(searchableText),
-            embedding,
-            vectorDim: VEC_DIM,
-            searchableText,
+            embedding
           }
           
           // Add chunk to chunks array
